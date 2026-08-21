@@ -35,6 +35,9 @@ class NormalizedMarket(BaseModel):
     yes_token_id: str | None = None
     no_token_id: str | None = None
     event_id: str | None = None
+    event_title: str | None = None
+    series_ticker: str | None = None
+    outcome_label: str | None = None
     updated_at: datetime | None = None
     source: Literal["mock", "live"] = "mock"
     watched: bool = False

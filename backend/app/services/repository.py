@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, select
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
 from app.models import ArbitrageOpportunityRecord, ConnectorHealthRecord, MarketMatchRecord, MarketRecord, MarketSnapshotRecord, OpportunitySnapshotRecord, OrderBookSnapshotRecord, PaperAccountRecord, PaperBalanceSnapshotRecord, PaperOrderRecord, PaperPositionRecord, PaperTradeRecord, ResolutionEventRecord, WatchedMarketRecord
+from app.models import DynamicExecutionScenarioRecord, DynamicSignalRecord, MarketPriceTickRecord, MatchSessionRecord
 from app.schemas.domain import ConnectorHealth, NormalizedMarket, OrderBook
 
 
@@ -256,7 +257,7 @@ class Repository:
     async def clear_test_data(self)->dict:
         async with SessionLocal() as session:
             counts={}
-            for name,model in [("resolution_events",ResolutionEventRecord),("balance_snapshots",PaperBalanceSnapshotRecord),("positions",PaperPositionRecord),("orders",PaperOrderRecord),("trades",PaperTradeRecord),("snapshots",OpportunitySnapshotRecord),("opportunities",ArbitrageOpportunityRecord),("pairs",MarketMatchRecord)]:
+            for name,model in [("dynamic_scenarios",DynamicExecutionScenarioRecord),("dynamic_signals",DynamicSignalRecord),("price_ticks",MarketPriceTickRecord),("match_sessions",MatchSessionRecord),("resolution_events",ResolutionEventRecord),("balance_snapshots",PaperBalanceSnapshotRecord),("positions",PaperPositionRecord),("orders",PaperOrderRecord),("trades",PaperTradeRecord),("snapshots",OpportunitySnapshotRecord),("opportunities",ArbitrageOpportunityRecord),("pairs",MarketMatchRecord)]:
                 result=await session.execute(delete(model).where(model.is_test.is_(True)));counts[name]=result.rowcount or 0
             account=await session.get(PaperAccountRecord,2)
             if account:account.cash=account.starting_balance;account.reserved_capital=0;account.realized_pnl=0;account.updated_at=datetime.now(UTC)

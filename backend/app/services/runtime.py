@@ -11,6 +11,7 @@ from app.services import mock_data
 from app.services.market_cache import MarketCache
 from app.services.repository import Repository
 from app.services.watched import WatchedMarketService
+from app.services.csl import CSLResearchService
 from app.matching.candidates import candidate_pairs
 from app.arbitrage.service import evaluate_pair
 from app.paper_trading.execution import execute_opportunity
@@ -31,6 +32,7 @@ class ArbiCastRuntime:
         self.tasks: list[asyncio.Task] = []
         self.stop = asyncio.Event()
         self.paper_pending:set[str]=set()
+        self.csl = CSLResearchService(self)
 
     async def start(self) -> None:
         await self.repository.initialize()
@@ -47,6 +49,7 @@ class ArbiCastRuntime:
         self.tasks.append(asyncio.create_task(self._matching_loop(), name="market-matching"))
         self.tasks.append(asyncio.create_task(self._arbitrage_loop(), name="arbitrage-detection"))
         self.tasks.append(asyncio.create_task(self._resolution_loop(), name="resolution-monitor"))
+        self.tasks.append(asyncio.create_task(self._csl_loop(), name="csl-dynamic-research"))
 
     async def close(self) -> None:
         self.stop.set()
@@ -145,6 +148,12 @@ class ArbiCastRuntime:
                     if kalshi.resolved_outcome or poly.resolved_outcome:await self.repository.record_resolution(position,kalshi.resolved_outcome,poly.resolved_outcome)
                 except Exception as exc:logger.warning("[RESOLUTION] check failed position=%s: %s",position["id"],str(exc)[:180])
             await self._wait(self.settings.market_refresh_seconds)
+
+    async def _csl_loop(self)->None:
+        while not self.stop.is_set():
+            try:await self.csl.record_cycle()
+            except Exception as exc:logger.warning("[CSL] dynamic cycle failed: %s",str(exc)[:240])
+            await self._wait(self.settings.dynamic_book_poll_ms/1000)
 
     async def watch(self, market_id: str, watched: bool) -> NormalizedMarket:
         if market_id not in self.cache.markets: raise KeyError(market_id)

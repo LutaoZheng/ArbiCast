@@ -90,6 +90,22 @@ def test_resolution_regulation_overtime_mismatch():
     result=resolution_compatibility("Win after 90 minutes regulation", "Advance including overtime and penalties")
     assert not result.compatible and result.differences
 
+def test_resolution_negation_and_date_normalization():
+    from app.matching.resolution import normalize_resolution_date
+    kalshi="Originally scheduled for Aug. 22, 2026 after 90 minutes plus stoppage time; does not include extra time or penalties."
+    poly="Scheduled for August 22, 2026. First 90 minutes of regular play plus stoppage time."
+    result=resolution_compatibility(kalshi,poly)
+    assert result.core_compatible and not result.fully_compatible
+    assert result.level=="CORE_COMPATIBLE"
+    assert result.resolution_risk=="CANCELLATION_RULE_UNVERIFIED"
+    assert normalize_resolution_date(kalshi).isoformat()=="2026-08-22"
+    assert normalize_resolution_date("2026-08-22").isoformat()=="2026-08-22"
+
+def test_resolution_positive_extra_time_and_penalties_conflict():
+    regulation="First 90 minutes plus stoppage time; does not include extra time or penalties."
+    assert not resolution_compatibility(regulation,"Winner including extra time").core_compatible
+    assert not resolution_compatibility(regulation,"Winner includes penalties").core_compatible
+
 def test_execution_full_partial_and_failed():
     class S:paper_trade_size=25;paper_slippage_buffer=.0025;paper_execution_latency_ms=250
     opportunity={"direction":"kalshi_yes_polymarket_no","kalshi_market_id":"k","polymarket_market_id":"p","kalshi_side":"YES","polymarket_side":"NO"}

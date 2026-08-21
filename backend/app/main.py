@@ -21,10 +21,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ArbiCast Research API", version="0.2.0", description="Read-only Kalshi × Polymarket market-data research and paper-trading API. No real trading endpoints exist.", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_credentials=False, allow_methods=["GET", "POST", "DELETE"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"])
 app.include_router(router)
 
 
 @app.get("/", summary="Safety boundary")
 async def root(): return {"name":"ArbiCast","trading":"disabled","docs":"/docs"}
-

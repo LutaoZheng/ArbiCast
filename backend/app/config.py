@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     polymarket_clob_url: str = "https://clob.polymarket.com"
     kalshi_max_markets: int = Field(500, ge=1, le=5000)
     polymarket_max_markets: int = Field(500, ge=1, le=5000)
+    csl_discovery_max_pages: int = Field(20, ge=1, le=100)
+    csl_discovery_max_markets: int = Field(5000, ge=100, le=20000)
+    csl_discovery_refresh_seconds: float = Field(300, ge=30, le=3600)
+    csl_recording_prestart_minutes: int = Field(30, ge=0, le=240)
+    csl_recording_max_hours: int = Field(4, ge=2, le=12)
     market_refresh_seconds: float = Field(60, ge=10, le=3600)
     orderbook_refresh_seconds: float = Field(3, ge=1, le=300)
     orderbook_snapshot_min_seconds: float = Field(15, ge=5, le=3600)
@@ -36,6 +41,13 @@ class Settings(BaseSettings):
     paper_execution_latency_ms: int = Field(250, ge=0, le=60000)
     paper_slippage_buffer: float = Field(.0025, ge=0, le=.1)
     paper_test_mode: bool = False
+    dynamic_book_poll_ms: int = Field(1000, ge=500, le=60000)
+    dynamic_tick_min_change: float = Field(.001, ge=0, le=.1)
+    dynamic_snapshot_interval_ms: int = Field(5000, ge=250, le=60000)
+    dynamic_signal_move_cents: float = Field(3.0, ge=.1, le=50)
+    dynamic_signal_window_ms: int = Field(1500, ge=100, le=30000)
+    dynamic_signal_ttl_ms: int = Field(2000, ge=100, le=60000)
+    dynamic_execution_latencies_ms: str = "100,250,500,750,1000,2000,3000"
 
     @model_validator(mode="after")
     def legacy_mock_flag(self):

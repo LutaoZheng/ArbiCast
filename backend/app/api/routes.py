@@ -1,4 +1,5 @@
 from datetime import timedelta
+from datetime import datetime
 from urllib.parse import unquote
 
 from fastapi import APIRouter, HTTPException, Request
@@ -6,7 +7,7 @@ from pydantic import BaseModel
 
 from app.config import get_settings
 from app.matching.candidates import candidate_pairs
-from app.schemas.domain import MatchStatus, NormalizedMarket, OrderBook
+from app.schemas.domain import MatchStatus, NormalizedMarket, OrderBook, Platform
 from app.services import mock_data
 from app.services.runtime import ArbiCastRuntime
 from app.services.research_test import ResearchTestService
@@ -23,6 +24,8 @@ def research(request:Request)->ResearchTestService:return ResearchTestService(ru
 class PairBody(BaseModel):kalshi_market_id:str;polymarket_market_id:str
 class PipelineBody(BaseModel):pair_id:str;direction:str;trade_size:float=Field(10,gt=0,le=1000);latency_ms:int=Field(250,ge=0,le=10000);min_net_edge:float=Field(-.05,ge=-1,le=.5)
 class CleanupBody(BaseModel):confirmation:str
+class SyntheticDynamicBody(BaseModel):
+    leader_venue:str="polymarket";leader_before:float=Field(.44,ge=0,le=1);leader_after:float=Field(.52,ge=0,le=1);follower_before:float=Field(.45,ge=0,le=1);follower_after:float=Field(.46,ge=0,le=1);outcome:str="HOME";size:float=Field(25,gt=0,le=1000)
 
 @router.get("/research-test/markets",summary="Search live cached markets for the research console")
 async def research_markets(request:Request,platform:str,query:str="",limit:int=20):
@@ -66,6 +69,19 @@ async def research_pipeline(request:Request,body:PipelineBody):
 
 @router.get("/research-test/verification",summary="Test database isolation and account status")
 async def research_verification(request:Request):return await runtime(request).repository.test_verification()
+
+@router.post("/research-test/dynamic",summary="Run an isolated synthetic timing test through the production dynamic engine")
+async def research_dynamic_test(request:Request,body:SyntheticDynamicBody):
+    from datetime import UTC,datetime,timedelta
+    from app.csl.dynamic import execute_dynamic_signal,simulate_latency_scenarios
+    from app.schemas.domain import OrderBook,OrderBookLevel
+    service=runtime(request).csl;now=datetime.now(UTC);follower="kalshi" if body.leader_venue=="polymarket" else "polymarket"
+    def tick(venue,price,when):return {"match_session_id":"test:synthetic-csl","venue":venue,"market_id":f"test:{venue}","outcome":body.outcome,"received_timestamp":when,"mid_price":price,"vwap_5":price,"vwap_25":price,"vwap_100":None}
+    history=[tick(body.leader_venue,body.leader_before,now),tick(follower,body.follower_before,now),tick(follower,body.follower_after,now+timedelta(milliseconds=400))]
+    signal=service.engine.detect(tick(body.leader_venue,body.leader_after,now+timedelta(milliseconds=500)),history,is_test=True)
+    if not signal:return {"is_test":True,"persisted":False,"signal":None,"reason":"Synthetic move did not satisfy production signal rules"}
+    books={ms:OrderBook(market_id=f"test:{follower}",timestamp=now+timedelta(milliseconds=ms),yes_asks=[OrderBookLevel(price=min(.99,body.follower_after+ms/100000),quantity=body.size)],no_asks=[OrderBookLevel(price=min(.99,1-body.follower_after+ms/100000),quantity=body.size)],source="mock") for ms in service.latencies}
+    return {"is_test":True,"persisted":False,"signal":signal,"ttl_expired":service.engine.expire(signal,signal["expires_at"])["status"]=="EXPIRED","scenarios":simulate_latency_scenarios(signal,books,follower,body.size,service.runtime.settings.paper_slippage_buffer)}
 
 @router.delete("/research-test/data",summary="Delete only is_test=true records")
 async def research_cleanup(request:Request,body:CleanupBody):
@@ -198,3 +214,52 @@ async def research_stats(request:Request):return await runtime(request).reposito
 async def get_runtime_settings(request: Request):
     service = runtime(request); health_state = await service.health(); settings = get_settings()
     return {"dataMode": settings.data_mode, "marketRefreshSeconds": settings.market_refresh_seconds, "orderbookRefreshSeconds": settings.orderbook_refresh_seconds, "watchedMarketsCount": len(service.watched.list()), "database": health_state["database"], "connectors": health_state["connectors"], "minNetEdge": settings.min_net_edge, "minExpectedProfit": settings.min_expected_profit, "defaultTradeSize": settings.default_trade_size, "paperLatencyMs": settings.paper_execution_latency_ms, "paperSlippageBuffer": settings.paper_slippage_buffer, "pollingFrequency": settings.orderbook_refresh_seconds, "kalshiFee": .07, "polymarketFee": 0,"paperTestMode":settings.paper_test_mode}
+
+@router.get("/csl/overview",summary="CSL dynamic research dashboard")
+async def csl_overview(request:Request):return await runtime(request).csl.overview()
+
+@router.get("/csl/discovery",summary="CSL discovery pipeline diagnostics",description="Bounded event-level football discovery, normalization, candidate and research-pair counts. Live and synthetic data are never mixed.")
+async def csl_discovery(request:Request,refresh:bool=False):return await runtime(request).csl.refresh_discovery(force=refresh)
+
+@router.get("/csl/discovery/kalshi-series",summary="Probe the known Kalshi CSL series")
+async def csl_kalshi_series(request:Request,refresh:bool=False):
+    connector=runtime(request).connectors[Platform.KALSHI]
+    if refresh or not connector.csl_series_probe:await connector.probe_csl_series()
+    return {k:v for k,v in connector.csl_series_probe.items() if k!="active_events_raw"}
+
+@router.get("/csl/matches",summary="List CSL match sessions")
+async def csl_matches(request:Request):return await runtime(request).csl.repo.sessions()
+
+@router.get("/csl/matches/live",summary="Current live CSL match session")
+async def csl_live_match(request:Request):
+    rows=await runtime(request).csl.repo.sessions(live_only=True)
+    return rows[0] if rows else None
+
+@router.get("/csl/matches/{session_id}",summary="CSL match session detail")
+async def csl_match(request:Request,session_id:str):
+    row=await runtime(request).csl.repo.session(unquote(session_id))
+    if not row:raise HTTPException(404,"CSL match session not found")
+    return row
+
+@router.get("/csl/matches/{session_id}/prices",summary="Time-bounded CSL price ticks")
+async def csl_prices(request:Request,session_id:str,outcome:str|None=None,since:datetime|None=None,until:datetime|None=None,limit:int=2000,downsample_ms:int=0):
+    rows=await runtime(request).csl.repo.ticks(unquote(session_id),since,until,outcome,min(limit,5000))
+    if downsample_ms>0:
+        buckets={}
+        for row in rows:buckets[(row["venue"],row["outcome"],int(row["received_timestamp"].timestamp()*1000)//downsample_ms)]=row
+        rows=sorted(buckets.values(),key=lambda x:x["received_timestamp"])
+    return rows
+
+@router.get("/csl/matches/{session_id}/signals",summary="CSL dynamic signals")
+async def csl_signals(request:Request,session_id:str,active_only:bool=False):return await runtime(request).csl.repo.signals(unquote(session_id),active_only=active_only)
+
+@router.get("/csl/research/summary",summary="CSL forward-test research summary")
+async def csl_research_summary(request:Request):
+    service=runtime(request).csl;summary=await service.repo.research_summary();summary["discovery"]=service.discovery
+    return summary
+
+@router.get("/csl/research/latency",summary="CSL execution latency survival")
+async def csl_research_latency(request:Request):return (await runtime(request).csl.repo.research_summary())["latency"]
+
+@router.get("/csl/research/performance",summary="CSL dynamic strategy performance, excluding tests")
+async def csl_research_performance(request:Request):return await runtime(request).csl.repo.research_summary()

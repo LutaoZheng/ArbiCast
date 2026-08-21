@@ -1,0 +1,7 @@
+"use client";
+import {useEffect,useState} from "react";
+import {browserApi} from "@/lib/browser-api";
+import type {SeriesProbe} from "@/lib/types";
+import {MetricCard} from "@/components/UI";
+
+export function KalshiSeriesProbe(){const [p,setP]=useState<SeriesProbe|null>(null);useEffect(()=>{browserApi<SeriesProbe>("/csl/discovery/kalshi-series").then(setP).catch(()=>{})},[]);const nearest=p?.nearest_fixture;return <section className="card mt-6 p-6"><div className="label">KALSHI CSL SERIES</div><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><MetricCard label="Series" english="KXCHNSLGAME" value={p?.exists?"YES":"NO"}/><MetricCard label="API 可访问" english="API Reachable" value={p?.api_reachable?"YES":"NO"}/><MetricCard label="开放事件" english="Open Events" value={p?.open_events||0}/><MetricCard label="未开放事件" english="Upcoming / Unopened" value={p?.upcoming_events||0}/></div><div className="mt-5 rounded-2xl bg-zinc-50 p-4 text-sm"><b>Nearest fixture</b><div className="mt-1 text-zinc-600">{nearest?`${String(nearest.title)} · ${new Date(String(nearest.start_date)).toLocaleString()}`:"—"}</div></div>{p?.events?.length?<div className="mt-5 overflow-x-auto"><table><thead><tr><th>Event ticker</th><th>Title</th><th>Status</th><th>Start</th><th>Markets</th></tr></thead><tbody>{p.events.slice(0,20).map((e,i)=><tr key={i}><td>{String(e.event_ticker)}</td><td>{String(e.title)}</td><td>{String(e.status)}</td><td>{new Date(String(e.start_date)).toLocaleString()}</td><td>{String(e.markets_count)}</td></tr>)}</tbody></table></div>:null}</section>}

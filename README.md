@@ -1,120 +1,60 @@
 # ArbiCast
 
-Cross-Market Prediction Market Arbitrage Research Platform<br>
-跨平台预测市场套利研究平台
+**Cross-Market Prediction-Market Research Platform**<br>
+**跨平台预测市场套利与动态价格发现研究平台**
 
-ArbiCast is a local research platform for comparing Kalshi and Polymarket prediction markets. It identifies potentially equivalent contracts, validates resolution compatibility, measures real order-book depth, VWAP, fees, slippage, and execution latency, then studies execution through persistent paper trading.
+[中文说明](README.zh-CN.md)
 
-ArbiCast 是一个本地运行的 Kalshi × Polymarket 研究平台。它用于寻找可能等价的预测市场合约，核验结算规则，并基于真实盘口深度、VWAP、手续费、滑点和执行延迟研究跨平台套利是否具备现实可执行性。
+ArbiCast is a local research platform for studying executable cross-market and dynamic sports prediction-market opportunities, currently focused on Chinese Super League (CSL) markets across Kalshi and Polymarket. It combines live public market data, strict contract matching, real order-book depth, VWAP, latency-aware simulated execution, and persistent research analytics.
 
-> A research platform designed to test whether apparent arbitrage survives real execution constraints.<br>
-> 它的目标不是证明“套利一定赚钱”，而是验证表面套利在真实执行约束下是否仍然成立。
+> ArbiCast tests whether apparent opportunities survive contract-equivalence checks, liquidity, fees, spread, slippage, and execution latency. It does not claim guaranteed arbitrage.
 
-**ArbiCast currently performs read-only market research and paper trading only. It does not place real-money orders.**
+**ArbiCast is read-only research software with paper/simulated execution. It does not place real-money orders.**
 
-## Current Status / 当前状态
-
-| Phase | Scope / 范围 | Status / 状态 |
-| --- | --- | --- |
-| Phase 1 | Mock Dashboard / 模拟数据仪表盘 | ✅ Complete |
-| Phase 2 | Live Kalshi + Polymarket market data / 真实市场数据 | ✅ Complete |
-| Phase 2.5 | Simplified bilingual UI / 简洁中英双语界面 | ✅ Complete |
-| Phase 3 | Market Matcher + Arbitrage Engine / 市场匹配与套利引擎 | ✅ Core implementation |
-| Phase 4 | Paper Account + Execution Simulator + Settlement / 模拟账户、执行与结算 | ✅ Core implementation |
-| Phase 4.5 | Research Test Console + End-to-End Validation / 研究测试台与端到端验证 | ✅ Complete |
-
-At the latest validation, the configured 500 × 500 live-market cache produced **0 real high-confidence matched pairs**. This is an honest research result, not a system failure: strict matching intentionally avoids presenting low-quality or non-equivalent contracts as arbitrage.
-
-最近一次验证中，配置的 500 × 500 真实市场缓存产生了 **0 个真实高置信匹配对**。这不是被隐藏的失败，而是研究结果：系统宁愿漏掉候选，也不会把低质量或结算规则不等价的合约包装成套利。
-
-## What ArbiCast Is Trying to Answer / ArbiCast 想回答什么？
-
-Do apparent Kalshi × Polymarket arbitrage opportunities remain profitable after accounting for:
-
-- contract equivalence and resolution-rule checks;
-- order-book depth and VWAP;
-- fees, slippage, and safety buffers;
-- execution latency and partial or single-leg fills;
-- capital holding time and actual settlement?
-
-ArbiCast 想回答：在扣除以下现实约束后，Kalshi × Polymarket 的表面套利是否仍能盈利？
-
-- 合约是否真正等价、结算规则是否一致；
-- 盘口深度与真实 VWAP；
-- 手续费、滑点和安全缓冲；
-- 执行延迟、部分成交与单腿风险；
-- 资金占用时间与最终真实结算。
-
-## Features / 核心功能
-
-### Live Market Data / 实时市场数据
-
-- Kalshi and Polymarket public market ingestion / 两个平台公开市场数据接入
-- Cursor/keyset pagination and configurable market limits / 分页与可配置市场上限
-- Normalized YES/NO order books and watched markets / 统一 YES/NO 盘口与关注市场
-- Automatic metadata and order-book refresh / 自动刷新
-- Independent connector health, retry, backoff, and rate-limit tracking / 独立健康状态、重试、退避与限流记录
-- PostgreSQL market and order-book snapshots / PostgreSQL 行情快照
-
-### Market Matching / 市场匹配
-
-- Title normalization and token similarity / 标题标准化与相似度
-- Entity, date, category, and numeric-threshold matching / 实体、日期、类别与数字阈值匹配
-- Event-scope and resolution-compatibility checks / 事件范围与结算兼容性检查
-- Manual Approve, Reject, and Needs Review workflow / 人工审核流程
-
-### Arbitrage Engine / 套利引擎
-
-- Both directions: Kalshi YES + Polymarket NO, and Kalshi NO + Polymarket YES
-- Multi-level order-book depth and VWAP / 多档盘口与 VWAP
-- Configurable fee models, slippage, and safety buffer / 可配置手续费、滑点与安全缓冲
-- Multiple trade-size calculations / 多仓位规模计算
-- Opportunity lifecycle, edge history, and replay / 机会生命周期、Edge 历史与重放
-
-### Paper Trading / 模拟交易
-
-- Persistent paper account / 持久化模拟账户
-- Execution latency and refreshed-book simulation / 延迟后重新读取盘口模拟
-- Full fill, partial fill, single-leg, and failed states / 完全成交、部分成交、单腿与失败状态
-- Paper orders, trades, positions, settlement, and realized PnL / 模拟订单、交易、仓位、结算与已实现盈亏
-
-### Research Test Console / 研究测试台
-
-- Manually select live Kalshi and Polymarket markets / 手动选择真实市场
-- Explain matcher scores and rejection stages / 解释评分与筛选失败阶段
-- Find top-N nearest cross-platform markets / 查找最接近候选
-- Create isolated `TEST_APPROVED` pairs / 创建隔离测试 Pair
-- Inspect real order books and run sanity checks / 检查真实盘口
-- Calculate both arbitrage directions at multiple sizes / 计算两个方向与不同仓位
-- Trigger the production paper-execution path with test parameters / 使用正式服务链路触发模拟执行
-- Keep all test records isolated with `is_test=true` / 测试数据不进入正式 Performance
-
-## Architecture / 架构
+## Current Focus: CSL Dynamic Arbitrage Research
 
 ```text
-Kalshi API ───────┐
-                  ├──> Connectors ──> Normalized Markets
-Polymarket API ───┘                         │
-                                           ▼
-                                    Market Matcher
-                                           │
-                                    Approved Pairs
-                                           │
-                                           ▼
-                                    Arbitrage Engine
-                                           │
-                                     Opportunities
-                                           │
-                                           ▼
-                                    Paper Execution
-                                           │
-                                        Positions
-                                           │
-                                           ▼
-                                       Settlement
-                                           │
-                                           ▼
-                                      Performance
+Chinese Super League
+        ↓
+Kalshi + Polymarket
+        ↓
+Fixture and Outcome Matching
+        ↓
+Price Tick Recording
+        ↓
+Lead / Lag and Dynamic Signals
+        ↓
+Execution-Delay Simulation
+        ↓
+Markout and Research Performance
+```
+
+The current research question is:
+
+> During live CSL matches, do Kalshi and Polymarket exhibit cross-market price discrepancies or lead/lag relationships that persist long enough, with enough liquidity, to remain executable after realistic latency, fees, spread, and slippage?
+
+Static arbitrage, the general matcher, paper trading, settlement, replay, Research Test, and developer diagnostics remain available. Phase 5 adds a focused CSL research path; it does not replace the earlier platform.
+
+## How It Works
+
+```text
+Kalshi public APIs ───────┐
+                         ├─> Platform Connectors ─> Normalized Markets / Books
+Polymarket public APIs ───┘                              │
+                                                        ▼
+                                               Strict Market Matcher
+                                                        │
+                                  ┌─────────────────────┴────────────────────┐
+                                  ▼                                          ▼
+                         Static Arbitrage                         CSL Research Pairs
+                                  │                                          │
+                         Paper Execution                  MatchSession / PriceTick
+                                                                             │
+                                                               Lead/Lag / DynamicSignal
+                                                                             │
+                                                           ExecutionScenario / Markout
+                                                                             │
+                                                                  Research Performance
 ```
 
 - **Frontend:** Next.js, React, TypeScript, Tailwind CSS, Recharts
@@ -122,124 +62,262 @@ Polymarket API ───┘                         │
 - **Database:** PostgreSQL, SQLAlchemy 2.x, Alembic
 - **Runtime:** Docker Compose
 
-The frontend only talks to the ArbiCast backend. External platform JSON is normalized inside platform-specific connectors before reaching matching, arbitrage, or paper-trading logic.
+The frontend only communicates with the ArbiCast backend. Kalshi and Polymarket JSON is normalized inside platform-specific connectors before entering matching, arbitrage, or paper-execution services.
 
-前端只访问 ArbiCast Backend；平台原始 JSON 在 Connector 内完成归一化，业务层不直接依赖 Kalshi 或 Polymarket 的原始结构。
+## Current Live Research Status
 
-## User Interface / 页面
+The following is a live validation snapshot from **2026-08-21**, not a permanent market statistic:
 
-- **Overview / 概览** — system and research summary / 系统与研究摘要
-- **Markets / 市场** — live markets, watch controls, and books / 市场、关注与盘口
-- **Matches / 匹配** — candidate review and resolution comparison / 候选审核
-- **Opportunities / 套利机会** — live and historical opportunities / 实时与历史机会
-- **Paper Trading / 模拟交易** — account, positions, and simulated trades / 账户、仓位与交易
-- **Performance / 表现** — execution and realized performance / 执行与已实现表现
-- **Research Test / 研究测试** — end-to-end production-path validation / 端到端链路验证
-- **Developer Debug / 开发调试** — connectors, raw books, and request health / Connector 与原始盘口调试
-- **Settings / 设置** — research assumptions and intervals / 研究参数
+```text
+Kalshi compatible CSL markets:     33
+Polymarket compatible CSL markets: 57
 
-Normal research work focuses on Overview, Matches, Opportunities, Paper Trading, and Performance. Markets and Developer Debug are primarily diagnostic surfaces.
+Canonical fixture matches:         10
+Matched outcome pairs:             30
+Research pairs:                    30
 
-日常研究主要关注概览、匹配、套利机会、模拟交易和表现；Markets 与 Developer Debug 更多用于数据核验和故障排查。
+Fully-compatible outcome pairs:     0
+Recording sessions:                 0
+```
 
-## Setup / 启动
+`Recording sessions = 0` is expected before the configured recording window:
 
-### Requirements / 环境要求
+```text
+Research Pair → PRE_MATCH → Recording Window → Recording Session
+```
+
+By default, recording starts 30 minutes before the scheduled research time. A Research Pair can therefore exist before high-frequency recording begins.
+
+## Phase History
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| 1 | Mock dashboard | Complete |
+| 2 | Live Kalshi and Polymarket data, normalized books, health, persistence | Complete |
+| 2.5 | Simplified bilingual UI | Complete |
+| 3 | General matcher, resolution checks, static arbitrage, lifecycle and replay | Core complete |
+| 4 | Paper account, simulated execution, positions, settlement, performance | Core complete |
+| 4.5 | Isolated Research Test Console and end-to-end validation | Complete |
+| 5 | CSL MatchSession, ticks, dynamic signals, latency scenarios and markout | Core complete |
+| 5.1 | CSL acquisition, diagnostics, recording lifecycle and observability | Complete |
+| 5.2 | Direct Kalshi CSL series verification | Complete |
+| 5.3 | Live fixture-pairing audit and parser corrections | Complete |
+
+### Phase 5.1 — Data Acquisition and Observability
+
+- CSL discovery is independent of the general `MAX_MARKETS=500` cache.
+- Bounded football/event pagination and local CSL detection prevent unlimited scans.
+- `GET /api/csl/discovery` exposes each discovery stage and rejection diagnostics.
+- Research Pairs and Approved Trading Pairs are separate concepts.
+- A core-compatible Research Pair may record live ticks without human approval.
+- Paper execution retains stricter approval and resolution requirements.
+- Synthetic/test records remain isolated with `is_test=true` and are excluded from production research.
+- Price ticks preserve `exchange_timestamp`, `received_timestamp`, `processed_at`, and `source_type` without inventing unavailable exchange timestamps.
+- MatchSession recording has pre-start and maximum-duration boundaries.
+- Collector source, interval, and lag-quality warnings are visible in Debug and Research.
+
+Relevant configuration:
+
+```env
+CSL_DISCOVERY_MAX_PAGES=20
+CSL_DISCOVERY_MAX_MARKETS=5000
+CSL_DISCOVERY_REFRESH_SECONDS=300
+CSL_RECORDING_PRESTART_MINUTES=30
+CSL_RECORDING_MAX_HOURS=4
+```
+
+### Phase 5.2 — Kalshi CSL Discovery Verification
+
+The earlier `Kalshi CSL = 0` result did **not** mean Kalshi lacked CSL markets. The bounded global scan reached its limit before the series appeared, and normalization did not retain `series_ticker`.
+
+ArbiCast now directly probes `KXCHNSLGAME` and applies the deterministic league rule:
+
+```text
+series_ticker == KXCHNSLGAME → league = CSL
+```
+
+Live API verification confirmed:
+
+```text
+Series exists: YES
+Title: Chinese Super League Game
+Category: Sports
+Tags: Soccer
+```
+
+### Phase 5.3 — Fixture Pairing Verification
+
+A live audit confirmed all eight specified 2026-08-22/23 fixtures were present on both platforms. Three confirmed parser defects were corrected without changing matcher thresholds:
+
+1. Negated resolution phrases such as `does not include extra time or penalties` are no longer interpreted as including those phases.
+2. `Aug 22`, `August 22`, `Aug. 22`, and ISO dates normalize to a comparable `YYYY-MM-DD` date when an explicit year is available.
+3. Polymarket HOME/AWAY orientation now comes from the event-level fixture; the individual market question determines only the outcome.
+
+Regression audit:
+
+```text
+Fixtures present on both platforms: 8 / 8
+HOME orientation:                    8 / 8
+DRAW orientation:                    8 / 8
+AWAY orientation:                    8 / 8
+Core-compatible outcome pairs:      24 / 24
+```
+
+Reproduce the read-only live audit:
+
+```bash
+docker compose run --rm -e PYTHONPATH=/app \
+  backend python scripts/audit_csl_fixtures.py --summary
+```
+
+## Resolution Compatibility
+
+ArbiCast uses three explicit levels:
+
+- **CORE_COMPATIBLE** — same fixture, date, outcome, and regulation scope: 90 minutes plus stoppage time, with extra time and penalties excluded.
+- **FULLY_COMPATIBLE** — core compatibility plus confirmed-equivalent cancellation, abandonment, postponement, rescheduling, void/refund, and other edge-case rules.
+- **INCOMPATIBLE** — a core fixture, outcome, date, or resolution difference exists.
+
+Current matched CSL outcomes are:
+
+```text
+CORE_COMPATIBLE
+resolution_risk = CANCELLATION_RULE_UNVERIFIED
+```
+
+They may create Research Pairs, record PriceTicks, and support lead/lag and DynamicSignal research. They are **not** described as guaranteed arbitrage, and current Paper eligibility remains disabled until the stricter requirements are met.
+
+## Dynamic Research
+
+Existing Phase 5 capabilities include:
+
+- `MatchSession`, `MarketPriceTick`, `DynamicSignal`, and `DynamicExecutionScenario` persistence;
+- HOME/DRAW/AWAY price recording with change detection and bounded snapshots;
+- signal TTL and follower-lag observation;
+- execution-delay scenarios and 250 ms through 5 s markouts;
+- opportunity lifetime and collector-quality metadata;
+- strict separation of `STATIC_ARB`, `DYNAMIC_LEAD_LAG`, and `is_test=true` data.
+
+Price timestamp policy:
+
+```text
+exchange_timestamp  # null when the platform does not provide one
+received_timestamp
+processed_at
+source_type
+```
+
+Scores, match minutes, or exchange timestamps are never fabricated. No external football event feed is connected yet.
+
+## Collector and Latency Limitations
+
+Current collector mode:
+
+```text
+Kalshi:     REST polling
+Polymarket: REST polling
+Configured interval: 1000 ms
+lag_quality: LOW
+```
+
+Observed lead/lag may include collector latency. The current system does not claim reliable millisecond-level venue leadership. WebSocket or higher-quality exchange timestamps are a future data-quality improvement, not part of this checkpoint.
+
+## User Interface
+
+- **Overview** — current CSL research status and concise paper summary.
+- **Live Match** (`/live-match`) — fixture, recording status, H/D/A prices, ticks, current signal, observed lag, and quality. Some advanced metrics remain in progress until live observations exist.
+- **Research** (`/research`) — data coverage, latency survival, markout, and performance; empty datasets show insufficient live data rather than mock charts.
+- **Debug** (`/debug`) — CSL discovery pipeline, series probe, normalized fixtures, resolution levels, connectors, books, requests, and Research Test access.
+- **Markets, Matches, Opportunities, Paper, Performance, Research Test, Settings** — earlier research and diagnostic capabilities remain available.
+
+The Research Test Console uses real cached markets and production services while isolating generated records with `is_test=true`.
+
+## API
+
+FastAPI documentation is available at <http://localhost:8000/docs>. Primary CSL endpoints include:
+
+```text
+GET /api/csl/overview
+GET /api/csl/discovery
+GET /api/csl/discovery/kalshi-series
+GET /api/csl/matches
+GET /api/csl/matches/live
+GET /api/csl/matches/{id}/prices
+GET /api/csl/matches/{id}/signals
+GET /api/csl/research/summary
+GET /api/csl/research/latency
+GET /api/csl/research/performance
+```
+
+General market, order-book, matching, opportunity, paper, analytics, connector, and Research Test APIs remain available.
+
+## Quick Start
+
+### Requirements
 
 - Docker Desktop
 - Git
 
-Docker Compose is the recommended and reproducible runtime. No platform trading credentials are required because ArbiCast only reads public market data.
-
-推荐使用 Docker Compose。项目只读取公开行情，不需要平台交易凭据。
-
-### Environment / 环境变量
-
 ```bash
+git clone https://github.com/LutaoZheng/ArbiCast.git
+cd ArbiCast
 cp .env.example .env
 ```
 
-Important settings / 主要配置：
-
-```env
-DATA_MODE=live
-KALSHI_MAX_MARKETS=500
-POLYMARKET_MAX_MARKETS=500
-
-MARKET_REFRESH_SECONDS=60
-ORDERBOOK_REFRESH_SECONDS=3
-
-MIN_NET_EDGE=0.005
-ARBITRAGE_SAFETY_BUFFER=0.0025
-
-PAPER_STARTING_BALANCE=10000
-PAPER_TRADE_SIZE=25
-PAPER_EXECUTION_LATENCY_MS=250
-```
-
-`.env.example` contains development defaults only. The Compose PostgreSQL username/password are local container defaults and must not be reused for an exposed or production database.
-
-`.env.example` 只包含开发默认值。Compose 中的 PostgreSQL 用户名和密码仅用于本地容器，不能复用于公网或生产数据库。
-
-### Mock Mode / 模拟数据模式
+### Mock Mode
 
 ```bash
 DATA_MODE=mock docker compose up --build
 ```
 
-Mock Mode provides deterministic data for UI development and demonstrations. It must not be mixed with live research results.
+Mock mode is for deterministic UI/development work and remains isolated from live research.
 
-Mock Mode 用于 UI 开发和演示，不应与真实研究结果混合。
-
-### Live Mode / 真实数据模式
+### Live Mode
 
 ```bash
 DATA_MODE=live docker compose up --build
 ```
 
-Run in the background / 后台运行：
+Background mode:
 
 ```bash
-DATA_MODE=live docker compose up -d
+DATA_MODE=live docker compose up -d --build
 ```
 
-Open / 访问：
+Open:
 
-- Frontend: <http://localhost:3000>
-- Backend API: <http://localhost:8000>
-- FastAPI Docs: <http://localhost:8000/docs>
-- Research Test: <http://localhost:3000/research-test>
+- <http://localhost:3000>
+- <http://localhost:3000/live-match>
+- <http://localhost:3000/research>
+- <http://localhost:3000/debug>
+- <http://localhost:8000/docs>
 
-Live Mode reads public market data and simulates execution. It never places orders or accesses real accounts.
+Running plain `docker compose up --build` may use the environment/default data mode. For live research, verify that the UI displays **LIVE MODE**.
 
-Live Mode 读取公开市场数据并模拟执行，不会下单或访问真实账户。
-
-### Stop / 停止
+Stop without deleting PostgreSQL data:
 
 ```bash
 docker compose down
 ```
 
-Avoid `docker compose down -v` unless you intentionally want to delete the PostgreSQL volume and all persisted local research data.
+Do not use `docker compose down -v` unless permanent removal of the local database is intentional.
 
-除非确定要删除全部本地研究数据，否则不要使用 `docker compose down -v`。
+## Testing
 
-### Logs / 日志
-
-```bash
-docker compose logs -f backend
-docker compose logs -f frontend
-```
-
-## Tests and Validation / 测试与验证
-
-Backend tests in Docker / Docker 中运行后端测试：
+Backend:
 
 ```bash
 docker compose run --rm backend pytest -q
 ```
 
-Frontend type check and production build / 前端类型检查与生产构建：
+CSL fixture audit:
+
+```bash
+docker compose run --rm -e PYTHONPATH=/app \
+  backend python scripts/audit_csl_fixtures.py --summary
+```
+
+Frontend:
 
 ```bash
 cd frontend
@@ -248,116 +326,73 @@ npm run typecheck
 npm run build
 ```
 
-Compose configuration validation / Compose 配置验证：
+Compose:
 
 ```bash
 docker compose config --quiet
 ```
 
-Optional read-only live connector smoke test / 可选真实只读 Connector 测试：
+The Docker frontend production build is the canonical build verification path. A macOS ARM checkout with an incomplete local optional dependency installation may report a missing Next.js SWC binary even when the Docker production build succeeds.
 
-```bash
-docker compose run --rm backend python scripts/test_live_connectors.py
-```
+Phase 5.3 checkpoint validation: **43 backend tests passed**, the live eight-fixture audit returned **24/24 core-compatible outcomes**, frontend Docker production build passed, and Compose configuration validated.
 
-Latest checkpoint validation: **26 backend tests passed**. Update this count if the test suite changes.
-
-最近 checkpoint 验证结果：**26 个后端测试通过**。测试数量变化后应同步更新。
-
-## Research Workflow / 研究流程
-
-1. Run ArbiCast in Live Mode. / 使用 Live Mode 启动。
-2. Collect real Kalshi and Polymarket markets. / 获取两个平台真实市场。
-3. Review candidate matches and resolution rules. / 审核候选匹配与结算规则。
-4. Approve only genuinely equivalent contracts. / 只批准真正等价的合约。
-5. Observe depth-aware executable opportunities. / 观察基于盘口深度的可执行机会。
-6. Let Paper Trading simulate delayed two-leg execution. / 模拟延迟后的双腿执行。
-7. Wait for real market resolution. / 等待真实市场结算。
-8. Review realized PnL and execution performance. / 复盘已实现盈亏和执行表现。
-
-## Research Test Console / 研究测试台
-
-Open <http://localhost:3000/research-test> in Live Mode to inspect the full production research path without using the terminal.
-
-在 Live Mode 中打开 <http://localhost:3000/research-test>，可不依赖终端检查完整正式研究链路：
-
-- search and manually pair live markets / 搜索并手动配对真实市场；
-- see why Matcher passes, reviews, or rejects a pair / 查看 Matcher 的具体判断依据；
-- check top-10 retrieval recall / 检查 Top-10 召回；
-- inspect normalized live order books / 检查标准化真实盘口；
-- calculate positive or negative Edge without hiding results / 显示正负 Edge；
-- trigger simulated execution with isolated test thresholds / 使用隔离测试阈值触发模拟执行。
-
-Research Test records use `is_test=true`, a separate test paper account, and `approval_source=test`. Normal Performance queries exclude them, and the console can delete only test records.
-
-研究测试记录使用 `is_test=true`、独立测试账户和 `approval_source=test`；正式 Performance 默认排除测试记录，清理按钮也只删除测试数据。
-
-## Important Metrics / 重要指标
-
-- **Net Edge / 净优势** — gross payout margin after fees, slippage, and safety buffer / 扣除手续费、滑点与安全缓冲后的空间。
-- **VWAP / 成交量加权均价** — expected average price after consuming multiple book levels / 吃入多档盘口后的平均成交价。
-- **Dual Fill Rate / 双腿成交率** — share of attempted paper trades that complete both legs / 两条腿均完成目标成交的比例。
-- **Expected Edge / 预期优势** — Edge observed when an opportunity is detected / 发现机会时的理论 Edge。
-- **Realized Entry Edge / 实现入场优势** — Edge calculated from simulated post-latency fills / 延迟后模拟成交价对应的 Edge。
-- **Edge Capture Ratio / Edge 捕获率** — realized entry Edge divided by expected Edge / 实现 Edge 与预期 Edge 的比率。
-- **Holding Time / 资金占用时间** — time between opening and settlement / 开仓至结算的时间。
-- **Paper PnL / 模拟盈亏** — payout minus simulated cost and fees after settlement / 结算收益减模拟成本与费用。
-- **ROI / 收益率** — paper-account return relative to starting balance / 相对模拟初始资金的收益率。
-
-## Project Structure / 项目结构
+## Project Structure
 
 ```text
 backend/
   app/
-    connectors/      # Kalshi and Polymarket read-only adapters
-    matching/        # candidate and resolution compatibility logic
-    arbitrage/       # VWAP, fees, opportunities, and replay
-    paper_trading/   # simulated execution
-    services/        # runtime, cache, persistence, research test
-    models/          # SQLAlchemy records
-  alembic/           # database migrations
-  tests/             # unit tests and API fixtures
-frontend/            # Next.js dashboard
+    connectors/       # read-only platform adapters
+    matching/         # general and resolution matching
+    csl/              # deterministic CSL matching and dynamic research
+    arbitrage/        # VWAP, fees, lifecycle, replay
+    paper_trading/    # simulated execution
+    services/         # scheduler, cache, persistence, research services
+    models/           # SQLAlchemy models
+  alembic/            # PostgreSQL migrations
+  scripts/            # live smoke tests and fixture audit
+  tests/
+frontend/             # Next.js application
 docker-compose.yml
 .env.example
 README.md
+README.zh-CN.md
 ```
 
-## Safety / 安全边界
+## Current Limitations
 
-The current version provides:
+- Live market coverage remains bounded by explicit discovery limits.
+- Resolution edge cases are not yet fully verified across platforms.
+- Current CSL pairs are core-compatible, not guaranteed-arbitrage compatible.
+- REST polling limits lead/lag timestamp quality.
+- Recording and performance datasets remain sparse until real CSL matches enter the recording window.
+- Paper execution is a simulation and cannot guarantee real fills.
+- Live Match and Research advanced metrics remain in progress where real observations are insufficient.
+- No live trading, account login, wallet, private-key, deposit, or withdrawal support exists.
+- ArbiCast is research software, not financial advice.
 
-- read-only public market data;
-- analysis and paper trading only;
-- no real-money order execution or cancellation;
-- no deposits or withdrawals;
-- no wallet signing, private-key, or real-account login logic;
-- no geographic-restriction bypass.
+## Next Experiment
 
-当前版本只读取公开市场数据并进行研究与模拟交易，不包含真钱下单、撤单、充值、提现、钱包签名、私钥、真实账户登录或地域限制绕过能力。
+The next step is not another strategy. It is to record real CSL matches and test whether observed cross-market opportunities survive realistic execution latency.
 
-## Known Limitations / 已知限制
+The forward test will measure PriceTicks, dynamic signals, lead/lag, opportunity lifetime, order-book depth, VWAP, fees, slippage, execution delay, markout, and paper PnL at:
 
-- The live market universe is limited by configured market counts. / 真实市场范围受配置上限影响。
-- Cross-platform market overlap may be sparse. / 两个平台同时存在的等价市场可能很少。
-- The Matcher may have false negatives. / Matcher 可能漏掉真实对应市场。
-- Not every resolution-rule difference can be verified automatically. / 结算规则差异无法全部自动判断。
-- Paper execution is a simulation and cannot guarantee real fills. / 模拟成交不等于真实成交。
-- Public polling and snapshot granularity limit latency analysis. / Polling 与快照粒度限制延迟分析精度。
-- Live trading is not supported. / 不支持真实交易。
-- ArbiCast is research software, not financial advice. / 本项目是研究软件，不构成财务建议。
+```text
+0 ms · 100 ms · 250 ms · 500 ms · 1 s · 2 s · 3 s · 5 s
+```
 
-## Roadmap / 下一阶段
+Key questions:
 
-### Phase 5 — Long-running Forward Test / 长期前向测试
+- How many observations survive 500 ms, 1 second, and 2 seconds?
+- How much executable depth exists after latency?
+- How much theoretical edge is lost to spread, fees, slippage, and delay?
+- What is delay-adjusted paper PnL?
 
-- improve market-universe coverage / 提升市场覆盖；
-- validate Matcher recall / 验证 Matcher 召回率；
-- collect live opportunities and edge decay / 收集真实机会与 Edge 衰减；
-- measure dual-fill and execution success / 测量双腿成交率；
-- collect settled paper PnL / 收集结算后的模拟盈亏；
-- measure capital efficiency / 测量资金效率。
+## Safety and Research Scope
 
-Real-money execution may only be considered after sufficient forward-test evidence and a separate safety review. It is **not currently implemented**.
+ArbiCast currently supports:
 
-只有积累足够长期验证数据并进行独立安全评审后，才可能讨论真实执行；当前**没有实现**。
+- public read-only market data;
+- local analysis and research persistence;
+- paper/simulated execution only.
+
+It does **not** implement real-money order placement or cancellation, account login, wallet signing, private-key storage, deposits, withdrawals, or geographic-restriction bypass. No result is a guarantee of profit or financial advice.
