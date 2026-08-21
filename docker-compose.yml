@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: arbicast
+      POSTGRES_USER: arbicast
+      POSTGRES_PASSWORD: arbicast
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arbicast"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATA_MODE: ${DATA_MODE:-mock}
+      USE_MOCK_DATA: ${USE_MOCK_DATA:-true}
+      DATABASE_URL: postgresql+asyncpg://arbicast:arbicast@db:5432/arbicast
+      MIN_NET_EDGE: ${MIN_NET_EDGE:-0.005}
+      MIN_EXPECTED_PROFIT: ${MIN_EXPECTED_PROFIT:-0.10}
+      DEFAULT_TRADE_SIZE: ${DEFAULT_TRADE_SIZE:-100}
+      PAPER_LATENCY_MS: ${PAPER_LATENCY_MS:-500}
+      PAPER_SLIPPAGE_BUFFER: ${PAPER_SLIPPAGE_BUFFER:-0.005}
+      MARKET_REFRESH_SECONDS: ${MARKET_REFRESH_SECONDS:-60}
+      ORDERBOOK_REFRESH_SECONDS: ${ORDERBOOK_REFRESH_SECONDS:-3}
+      ORDERBOOK_SNAPSHOT_MIN_SECONDS: ${ORDERBOOK_SNAPSHOT_MIN_SECONDS:-15}
+      KALSHI_MAX_MARKETS: ${KALSHI_MAX_MARKETS:-500}
+      POLYMARKET_MAX_MARKETS: ${POLYMARKET_MAX_MARKETS:-500}
+      KALSHI_BASE_URL: ${KALSHI_BASE_URL:-https://external-api.kalshi.com/trade-api/v2}
+      POLYMARKET_GAMMA_URL: ${POLYMARKET_GAMMA_URL:-https://gamma-api.polymarket.com}
+      POLYMARKET_CLOB_URL: ${POLYMARKET_CLOB_URL:-https://clob.polymarket.com}
+      MATCHING_REFRESH_SECONDS: ${MATCHING_REFRESH_SECONDS:-120}
+      MATCHING_MIN_SCORE: ${MATCHING_MIN_SCORE:-0.50}
+      ARBITRAGE_SAFETY_BUFFER: ${ARBITRAGE_SAFETY_BUFFER:-0.0025}
+      OPPORTUNITY_SNAPSHOT_MIN_MS: ${OPPORTUNITY_SNAPSHOT_MIN_MS:-250}
+      PAPER_STARTING_BALANCE: ${PAPER_STARTING_BALANCE:-10000}
+      PAPER_TRADE_SIZE: ${PAPER_TRADE_SIZE:-25}
+      PAPER_MIN_NET_EDGE: ${PAPER_MIN_NET_EDGE:-0.015}
+      PAPER_MIN_LIQUIDITY: ${PAPER_MIN_LIQUIDITY:-25}
+      PAPER_MIN_MATCH_CONFIDENCE: ${PAPER_MIN_MATCH_CONFIDENCE:-0.98}
+      PAPER_EXECUTION_LATENCY_MS: ${PAPER_EXECUTION_LATENCY_MS:-250}
+      PAPER_TEST_MODE: ${PAPER_TEST_MODE:-false}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

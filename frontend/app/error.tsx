@@ -1,0 +1,3 @@
+"use client";
+import { RefreshCw } from "lucide-react";
+export default function Error({reset}:{reset:()=>void}){return <div className="card mx-auto mt-20 max-w-lg p-8 text-center"><div className="text-xl font-semibold">数据暂时不可用</div><div className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-400">Data temporarily unavailable</div><p className="text-sm leading-6 text-zinc-500">连接器故障不会停止 ArbiCast。请确认 Backend 正在运行，系统会继续重试。</p><button onClick={reset} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"><RefreshCw size={15}/>重试 Retry</button></div>}
